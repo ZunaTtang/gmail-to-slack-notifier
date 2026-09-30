@@ -24,6 +24,8 @@ function loadGas() {
   // 테스트는 저장소 기본 Config와 무관하게 같은 조건으로 돌림
   gas.CONFIG.REPORT.ENABLED = true;
   gas.CONFIG.REPORT.MENTION_ON = 'NO';
+  gas.CONFIG.REPORT.TITLE_NO = ':rotating_light: {{token}} Ranked Top 80%가 NO입니다.\n수동 거래를 진행해 주세요!';
+  gas.CONFIG.REPORT.TITLE_YES = ':white_check_mark: {{token}} Ranked Top 80%: YES';
   gas.CONFIG.MESSAGE.MENTION = '<@U000TEST>';
   gas.CONFIG.MESSAGE.MENTION_POSITION = 'after';
   return gas;
