@@ -284,6 +284,8 @@ clasp push
 | `TEMPLATE` | `'{{emoji}} {{subject}}'` | 제목 문구. 예: `'[{{fromName}}] {{subject}}'`, `':rotating_light: 긴급 메일 도착'` |
 | `STYLE` | `'bold'` | `bold`: 굵게 / `plain`: 일반 / `header`: 큰 헤더 글씨 (굵게·링크 같은 서식은 쓸 수 없고, 멘션은 헤더 바로 아래 줄로 분리됨) |
 
+줄을 바꾸려면 문자열 안에 `\n`을 넣습니다. 예: `'{{emoji}} 첫째 줄\n둘째 줄'`. `bold` 스타일이면 줄마다 따로 굵게 표시되고, 멘션은 마지막 줄 뒤에 붙습니다. `header` 스타일은 줄바꿈이 제대로 표시되지 않습니다.
+
 custom 형식에서는 이 제목을 `{{title}}` 변수로 씁니다.
 
 ### 멘션

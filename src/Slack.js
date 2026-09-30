@@ -30,7 +30,7 @@ function buildDefaultBlocks_(mail, vars) {
     if (mentionBlock && M.MENTION_POSITION !== 'before') blocks.push(mentionBlock);
   } else {
     const title = M.TITLE.SHOW && vars.title
-      ? (M.TITLE.STYLE === 'bold' ? `*${vars.title}*` : vars.title)
+      ? (M.TITLE.STYLE === 'bold' ? boldLines_(vars.title) : vars.title)
       : '';
     const line = joinMention_(title, vars.mention);
     if (line) blocks.push(mrkdwnSection_(line));
@@ -57,6 +57,11 @@ function buildDefaultBlocks_(mail, vars) {
   }
 
   return blocks;
+}
+
+/** Slack 굵게(*...*)는 줄을 넘지 못하므로 줄마다 따로 감쌈 */
+function boldLines_(text) {
+  return text.split('\n').map(line => (line.trim() ? `*${line.trim()}*` : line)).join('\n');
 }
 
 function mrkdwnSection_(text) {

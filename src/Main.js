@@ -37,7 +37,7 @@ function runCheck_({ dryRun }) {
         break;
       }
       if (message.getDate() < cutoff || message.isInTrash()) continue;
-      if (store.has(message.getId())) continue;
+      if (store.has(message.getId())) continue; //이미 보낸 알림을 다시 보내려면 이 부분 주석처리
       if (CONFIG.ONLY_UNREAD && !message.isUnread()) continue;
 
       const mail = toMail_(message, myEmail);
