@@ -136,13 +136,21 @@ function buildReportMessage_(mail, report) {
     blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: parts.join(' · ') }] });
   }
 
-  // 표 값: 2열 카드 (section 하나에 fields 최대 10개)
-  const fields = report.columns.map(c => ({
-    type: 'mrkdwn',
-    text: `*${escapeSlack_(c.label)}*\n${escapeSlack_(c.value)}`,
-  }));
-  for (let i = 0; i < fields.length; i += 10) {
-    blocks.push({ type: 'section', fields: fields.slice(i, i + 10) });
+  // 표 값
+  if (R.LAYOUT === 'fields') {
+    // 2열 카드 (section 하나에 fields 최대 10개)
+    const fields = report.columns.map(c => ({
+      type: 'mrkdwn',
+      text: `*${escapeSlack_(c.label)}*\n${escapeSlack_(c.value)}`,
+    }));
+    for (let i = 0; i < fields.length; i += 10) {
+      blocks.push({ type: 'section', fields: fields.slice(i, i + 10) });
+    }
+  } else if (report.columns.length) {
+    // 목록: 한 줄에 "항목: 값" (이름이 길어도 줄이 밀리지 않음)
+    const lines = report.columns.map(c => `• ${escapeSlack_(c.label)}: *${escapeSlack_(c.value)}*`);
+    blocks.push({ type: 'divider' });
+    blocks.push(mrkdwnSection_(truncate_(lines.join('\n'), 3000)));
   }
 
   if (R.SHOW_GMAIL_LINK) blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: vars.gmailLink }] });

@@ -92,6 +92,7 @@ const CONFIG = {
     TITLE_STYLE: 'bold',        // 'bold' | 'plain'
     MENTION_ON: 'NO',           // 'NO': NO일 때만 / 'ALWAYS': 항상 / 'NEVER': 안 함 (대상은 MESSAGE.MENTION)
 
+    LAYOUT: 'list',             // 'list': 한 줄에 "항목: 값" / 'fields': 2열 카드
     SHOW_SUMMARY: true,         // Ranked · 기준일 · 페어 · 평가 기간 요약 줄
     SHOW_GMAIL_LINK: true,
     NUMBER_FORMAT: true,        // true: 천 단위 쉼표 (7946.49 → 7,946.49) / false: 메일 원문 그대로

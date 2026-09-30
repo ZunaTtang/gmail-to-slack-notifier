@@ -44,6 +44,9 @@ function validateConfig_() {
     if (!['NO', 'ALWAYS', 'NEVER'].includes(R.MENTION_ON)) {
       errors.push("REPORT.MENTION_ON은 'NO', 'ALWAYS', 'NEVER' 중 하나입니다.");
     }
+    if (R.LAYOUT && !['list', 'fields'].includes(R.LAYOUT)) {
+      errors.push("REPORT.LAYOUT은 'list' 또는 'fields'입니다.");
+    }
     if (!Array.isArray(R.COLUMNS) || R.COLUMNS.some(c => !c || !String(c.match || '').trim())) {
       errors.push('REPORT.COLUMNS의 각 항목에는 match(머리글 문구)가 있어야 합니다.');
     }

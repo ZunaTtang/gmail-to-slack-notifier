@@ -128,14 +128,24 @@ test('행 순서가 섞여도 가장 최근 날짜 행을 고른다', () => {
   assert.strictEqual(r.latest.date, '2026-09-29');
 });
 
-test('NO: 경고 제목 두 줄 + 멘션, 2열 카드', () => {
+test('NO: 경고 제목 두 줄 + 멘션, 목록형 값', () => {
   const { buildSlackMessage_ } = loadGas();
   const msg = buildSlackMessage_(mailWith(reportText()));
   const title = msg.blocks[0].text.text;
   assert.strictEqual(title, '*:rotating_light: ABC Ranked Top 80%가 NO입니다.*\n*수동 거래를 진행해 주세요!* <@U000TEST>');
   assert.match(msg.blocks[1].elements[0].text, /Ranked Top 80%: \*NO\* · 기준일 2026-09-29 · ABC-USDT/);
-  assert.strictEqual(msg.blocks[2].fields.length, 6);
+  assert.strictEqual(msg.blocks[2].type, 'divider');
+  const lines = msg.blocks[3].text.text.split('\n');
+  assert.strictEqual(lines.length, 6);
+  assert.strictEqual(lines[0], '• Daily Single-Sided Organic Volume (USDT): *1,234.56 USDT*');
   assert.strictEqual(msg.text, 'ABC Ranked Top 80%: NO (2026-09-29)');
+});
+
+test('LAYOUT fields: 2열 카드', () => {
+  const gas = loadGas();
+  gas.CONFIG.REPORT.LAYOUT = 'fields';
+  const msg = gas.buildSlackMessage_(mailWith(reportText()));
+  assert.strictEqual(msg.blocks[2].fields.length, 6);
 });
 
 test('YES: 다른 제목, 멘션 없음', () => {
@@ -149,7 +159,7 @@ test('열 숨기기: show:false인 열은 빠진다', () => {
   const gas = loadGas();
   gas.CONFIG.REPORT.COLUMNS[5].show = false;
   const msg = gas.buildSlackMessage_(mailWith(reportText()));
-  assert.strictEqual(msg.blocks[2].fields.length, 5);
+  assert.strictEqual(msg.blocks[3].text.text.split('\n').length, 5);
   assert.ok(!allText(msg).includes('Daily Floor Price'));
 });
 

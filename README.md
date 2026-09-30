@@ -404,14 +404,16 @@ NO일 때:
 🚨 LOT Ranked Top 80%가 NO입니다.
 수동 거래를 진행해 주세요! @담당자
 Ranked Top 80%: NO · 기준일 2026-09-29 · LOT-USDT · 평가 기간 2026-08-31 ~ 2026-09-29
-Daily Single-Sided Organic Volume (USDT)    Avg. Daily Single-Sided Liquidity (2%, USD)
-7,946.49 USDT                               1,165.91 USD
-Avg. Daily Spread (%)                       Daily Taker Volume (USD)
-0.14%                                       8,238.25 USD
-Daily Trading Frequency (%)                 Daily Floor Price
-18.47%                                      0.006077
+────────────────────────────
+• Daily Single-Sided Organic Volume (USDT): 7,946.49 USDT
+• Avg. Daily Single-Sided Liquidity (2%, USD): 1,165.91 USD
+• Avg. Daily Spread (%): 0.14%
+• Daily Taker Volume (USD): 8,238.25 USD
+• Daily Trading Frequency (%): 18.47%
+• Daily Floor Price: 0.006077
 Gmail에서 열기
 ```
+값은 굵게 표시됩니다. 2열 카드가 필요하면 `LAYOUT: 'fields'`로 바꾸세요.
 기본값은 항목 이름을 **메일 머리글 그대로** 쓰고, 값에는 천 단위 쉼표와 단위를 붙입니다. 바꾸려면 [표시할 열 바꾸기](#표시할-열-바꾸기-reportcolumns)를 참고하세요.
 YES일 때는 `✅ LOT Ranked Top 80%: YES` 제목으로 보내고, 기본값으로는 멘션하지 않습니다.
 
@@ -436,6 +438,7 @@ REPORT: { ENABLED: true, /* ... */ },
 | `TITLE_NO` / `TITLE_YES` | 경고 문구 / 확인 문구 | 결과별 제목. `\n`으로 줄바꿈 |
 | `TITLE_STYLE` | `'bold'` | `bold` / `plain` |
 | `MENTION_ON` | `'NO'` | `NO`: NO일 때만 / `ALWAYS`: 항상 / `NEVER`: 안 함 |
+| `LAYOUT` | `'list'` | `list`: 한 줄에 "항목: 값" (이름이 길어도 잘 읽힘) / `fields`: 2열 카드 (짧은 `label`을 쓸 때 적합) |
 | `SHOW_SUMMARY` | `true` | Ranked · 기준일 · 페어 · 평가 기간 요약 줄 |
 | `SHOW_GMAIL_LINK` | `true` | Gmail에서 열기 링크 |
 | `NUMBER_FORMAT` | `true` | `true`: 천 단위 쉼표 (소수 자릿수는 원문 그대로) / `false`: 메일 원문 그대로 |
