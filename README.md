@@ -405,14 +405,14 @@ NO일 때:
 수동 거래를 진행해 주세요! @담당자
 Ranked Top 80%: NO · 기준일 2026-09-29 · LOT-USDT · 평가 기간 2026-08-31 ~ 2026-09-29
 Daily Single-Sided Organic Volume (USDT)    Avg. Daily Single-Sided Liquidity (2%, USD)
-7946.49                                     1165.91
+7,946.49 USDT                               1,165.91 USD
 Avg. Daily Spread (%)                       Daily Taker Volume (USD)
-0.14                                        8238.25
+0.14%                                       8,238.25 USD
 Daily Trading Frequency (%)                 Daily Floor Price
-18.47                                       0.006077
+18.47%                                      0.006077
 Gmail에서 열기
 ```
-기본값은 항목 이름과 값을 **메일 원문 그대로** 보여줍니다. 짧은 이름, 단위, 천 단위 쉼표를 원하면 [표시할 열 바꾸기](#표시할-열-바꾸기-reportcolumns)를 참고하세요.
+기본값은 항목 이름을 **메일 머리글 그대로** 쓰고, 값에는 천 단위 쉼표와 단위를 붙입니다. 바꾸려면 [표시할 열 바꾸기](#표시할-열-바꾸기-reportcolumns)를 참고하세요.
 YES일 때는 `✅ LOT Ranked Top 80%: YES` 제목으로 보내고, 기본값으로는 멘션하지 않습니다.
 
 ### 켜는 방법 (`Config.js`)
@@ -438,7 +438,7 @@ REPORT: { ENABLED: true, /* ... */ },
 | `MENTION_ON` | `'NO'` | `NO`: NO일 때만 / `ALWAYS`: 항상 / `NEVER`: 안 함 |
 | `SHOW_SUMMARY` | `true` | Ranked · 기준일 · 페어 · 평가 기간 요약 줄 |
 | `SHOW_GMAIL_LINK` | `true` | Gmail에서 열기 링크 |
-| `NUMBER_FORMAT` | `false` | `false`: 메일 원문 그대로 / `true`: 천 단위 쉼표 (소수 자릿수는 원문 그대로) |
+| `NUMBER_FORMAT` | `true` | `true`: 천 단위 쉼표 (소수 자릿수는 원문 그대로) / `false`: 메일 원문 그대로 |
 | `NOTIFICATION_TEXT` | `'{{token}} Ranked Top 80%: {{ranked}} ({{date}})'` | 푸시 알림 한 줄 |
 | `LABELS` | `ranked`, `date`, `period` | 요약 줄의 항목 이름 |
 | `COLUMNS` | 표의 6개 값 열 | 표시할 열 목록 (아래 참고) |
@@ -458,12 +458,12 @@ REPORT: { ENABLED: true, /* ... */ },
 
 ### 표시할 열 바꾸기 (`REPORT.COLUMNS`)
 ```js
-{ match: 'Daily Taker Volume', label: '', unit: '', show: true },            // 기본: 원문 그대로
-{ match: 'Daily Taker Volume', label: 'Taker Volume', unit: ' USD', show: true }, // 짧은 이름 + 단위
+{ match: 'Daily Taker Volume', label: '', unit: ' USD', show: true },             // 기본: 머리글 그대로 + 단위
+{ match: 'Daily Taker Volume', label: 'Taker Volume', unit: ' USD', show: true }, // 짧은 이름
 ```
 - `match`: 표 머리글에 **포함된 문구**입니다. 대소문자는 구분하지 않고, 머리글 뒤쪽이 조금 바뀌어도 찾을 수 있습니다.
 - `label`: Slack에 표시할 이름입니다. **빈 값이면 메일 머리글 그대로** 표시합니다(예: `Daily Taker Volume (USD)`). 한글도 됩니다(예: `'테이커 거래량'`).
-- `unit`: 값 뒤에 붙일 단위입니다. 원문 머리글에는 이미 단위가 들어 있으니, `label`을 비워 둘 때는 `unit`도 비워 두세요.
+- `unit`: 값 뒤에 붙일 단위입니다. 빈 값이면 숫자만 표시합니다.
 - `show: false`로 바꾸면 숨깁니다. 배열 순서가 곧 카드에 표시되는 순서입니다.
 - Date와 Trading Pair 열은 요약 줄에 표시되므로 여기에는 넣지 않습니다.
 

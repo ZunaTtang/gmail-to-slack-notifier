@@ -89,25 +89,25 @@ test('탭 텍스트: Ranked·토큰·기간·최신 행을 읽는다', () => {
   assert.strictEqual(r.latest.date, '2026-09-29');
   assert.strictEqual(r.latest.pair, 'ABC-USDT');
   assert.strictEqual(r.rows.length, 3);
-  // 기본값: 머리글과 값 모두 메일 원문 그대로
+  // 기본값: 이름은 메일 머리글 그대로, 값은 쉼표 + 단위
   const values = Object.fromEntries(r.columns.map(c => [c.label, c.value]));
   assert.deepStrictEqual(values, {
-    'Daily Single-Sided Organic Volume (USDT)': '1234.56',
-    'Avg. Daily Single-Sided Liquidity (2%, USD)': '1000.1',
-    'Avg. Daily Spread (%)': '0.12',
-    'Daily Taker Volume (USD)': '2345.67',
-    'Daily Trading Frequency (%)': '11.11',
+    'Daily Single-Sided Organic Volume (USDT)': '1,234.56 USDT',
+    'Avg. Daily Single-Sided Liquidity (2%, USD)': '1,000.1 USD',
+    'Avg. Daily Spread (%)': '0.12%',
+    'Daily Taker Volume (USD)': '2,345.67 USD',
+    'Daily Trading Frequency (%)': '11.11%',
     'Daily Floor Price': '0.001234',
   });
 });
 
-test('label·unit·NUMBER_FORMAT을 지정하면 그대로 적용된다', () => {
+test('label을 지정하거나 NUMBER_FORMAT을 끄면 그대로 적용된다', () => {
   const gas = loadGas();
-  gas.CONFIG.REPORT.NUMBER_FORMAT = true;
-  Object.assign(gas.CONFIG.REPORT.COLUMNS[0], { label: 'Organic Volume', unit: ' USDT' });
+  gas.CONFIG.REPORT.NUMBER_FORMAT = false;
+  Object.assign(gas.CONFIG.REPORT.COLUMNS[0], { label: 'Organic Volume', unit: '' });
   const r = gas.parseReport_(reportText());
   assert.strictEqual(r.columns[0].label, 'Organic Volume');
-  assert.strictEqual(r.columns[0].value, '1,234.56 USDT');
+  assert.strictEqual(r.columns[0].value, '1234.56');
   assert.strictEqual(r.columns[5].value, '0.001234');
 });
 
@@ -118,7 +118,7 @@ test('HTML 표: 셀 사이 줄바꿈이 있어도 같은 결과', () => {
   const r = parseReport_(text);
   assert.strictEqual(r.ok, true, r.errors.join());
   assert.strictEqual(r.latest.date, '2026-09-29');
-  assert.strictEqual(r.columns[0].value, '1234.56');
+  assert.strictEqual(r.columns[0].value, '1,234.56 USDT');
   assert.strictEqual(r.columns[5].value, '0.001234');
 });
 
