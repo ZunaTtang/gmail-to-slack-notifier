@@ -94,18 +94,20 @@ const CONFIG = {
 
     SHOW_SUMMARY: true,         // Ranked · 기준일 · 페어 · 평가 기간 요약 줄
     SHOW_GMAIL_LINK: true,
-    NUMBER_FORMAT: true,        // 천 단위 쉼표 (7946.49 → 7,946.49)
+    NUMBER_FORMAT: false,       // true: 천 단위 쉼표 (7946.49 → 7,946.49) / false: 메일 원문 그대로
     NOTIFICATION_TEXT: '{{token}} Ranked Top 80%: {{ranked}} ({{date}})',
     LABELS: { ranked: 'Ranked Top 80%', date: '기준일', period: '평가 기간' },
 
-    // 표에서 보여줄 열 — match: 머리글에 포함된 문구 / label: Slack 표시 이름 / unit: 값 뒤에 붙일 단위
+    // 표에서 보여줄 열
+    //   match: 머리글에 포함된 문구 / label: 표시 이름 (빈 값이면 메일 머리글 그대로)
+    //   unit: 값 뒤에 붙일 단위 (머리글에 단위가 있으면 빈 값) / show: false면 숨김
     COLUMNS: [
-      { match: 'Daily Single-Sided Organic Volume', label: 'Organic Volume', unit: ' USDT', show: true },
-      { match: 'Avg. Daily Single-Sided Liquidity', label: 'Liquidity (2%)', unit: ' USD', show: true },
-      { match: 'Avg. Daily Spread', label: 'Avg. Spread', unit: '%', show: true },
-      { match: 'Daily Taker Volume', label: 'Taker Volume', unit: ' USD', show: true },
-      { match: 'Daily Trading Frequency', label: 'Trading Frequency', unit: '%', show: true },
-      { match: 'Daily Floor Price', label: 'Floor Price', unit: '', show: true },
+      { match: 'Daily Single-Sided Organic Volume', label: '', unit: '', show: true },
+      { match: 'Avg. Daily Single-Sided Liquidity', label: '', unit: '', show: true },
+      { match: 'Avg. Daily Spread', label: '', unit: '', show: true },
+      { match: 'Daily Taker Volume', label: '', unit: '', show: true },
+      { match: 'Daily Trading Frequency', label: '', unit: '', show: true },
+      { match: 'Daily Floor Price', label: '', unit: '', show: true },
     ],
   },
 

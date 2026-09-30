@@ -89,15 +89,26 @@ test('탭 텍스트: Ranked·토큰·기간·최신 행을 읽는다', () => {
   assert.strictEqual(r.latest.date, '2026-09-29');
   assert.strictEqual(r.latest.pair, 'ABC-USDT');
   assert.strictEqual(r.rows.length, 3);
+  // 기본값: 머리글과 값 모두 메일 원문 그대로
   const values = Object.fromEntries(r.columns.map(c => [c.label, c.value]));
   assert.deepStrictEqual(values, {
-    'Organic Volume': '1,234.56 USDT',
-    'Liquidity (2%)': '1,000.1 USD',
-    'Avg. Spread': '0.12%',
-    'Taker Volume': '2,345.67 USD',
-    'Trading Frequency': '11.11%',
-    'Floor Price': '0.001234',
+    'Daily Single-Sided Organic Volume (USDT)': '1234.56',
+    'Avg. Daily Single-Sided Liquidity (2%, USD)': '1000.1',
+    'Avg. Daily Spread (%)': '0.12',
+    'Daily Taker Volume (USD)': '2345.67',
+    'Daily Trading Frequency (%)': '11.11',
+    'Daily Floor Price': '0.001234',
   });
+});
+
+test('label·unit·NUMBER_FORMAT을 지정하면 그대로 적용된다', () => {
+  const gas = loadGas();
+  gas.CONFIG.REPORT.NUMBER_FORMAT = true;
+  Object.assign(gas.CONFIG.REPORT.COLUMNS[0], { label: 'Organic Volume', unit: ' USDT' });
+  const r = gas.parseReport_(reportText());
+  assert.strictEqual(r.columns[0].label, 'Organic Volume');
+  assert.strictEqual(r.columns[0].value, '1,234.56 USDT');
+  assert.strictEqual(r.columns[5].value, '0.001234');
 });
 
 test('HTML 표: 셀 사이 줄바꿈이 있어도 같은 결과', () => {
@@ -107,7 +118,7 @@ test('HTML 표: 셀 사이 줄바꿈이 있어도 같은 결과', () => {
   const r = parseReport_(text);
   assert.strictEqual(r.ok, true, r.errors.join());
   assert.strictEqual(r.latest.date, '2026-09-29');
-  assert.strictEqual(r.columns[0].value, '1,234.56 USDT');
+  assert.strictEqual(r.columns[0].value, '1234.56');
   assert.strictEqual(r.columns[5].value, '0.001234');
 });
 
@@ -139,7 +150,7 @@ test('열 숨기기: show:false인 열은 빠진다', () => {
   gas.CONFIG.REPORT.COLUMNS[5].show = false;
   const msg = gas.buildSlackMessage_(mailWith(reportText()));
   assert.strictEqual(msg.blocks[2].fields.length, 5);
-  assert.ok(!allText(msg).includes('Floor Price'));
+  assert.ok(!allText(msg).includes('Daily Floor Price'));
 });
 
 test('표가 없으면 파싱 실패 경고를 보낸다', () => {
