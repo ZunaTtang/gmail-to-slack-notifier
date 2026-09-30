@@ -25,11 +25,59 @@ const CONFIG = {
   // ── 트리거 ──
   TRIGGER_INTERVAL_MINUTES: 5, // 1, 5, 10, 15, 30 중 하나 (변경 후 setupTrigger 다시 실행)
 
-  // ── Slack 메시지 ──
+  // ── Slack 발송 방식 ──
   SLACK_SEND_MODE: 'auto',     // 'auto': 봇 설정이 있으면 봇, 없으면 웹훅 / 'bot' / 'webhook'
-  MENTION: '',                 // 예: '<!channel>', '<!here>', '<@U0123ABCD>'
-  BODY_PREVIEW_CHARS: 300,     // 본문 미리보기 글자 수 (0이면 본문 미포함)
-  SHOW_GMAIL_LINK: true,       // "Gmail에서 열기" 링크 표시
+
+  // ── Slack 메시지 형식 ──
+  // 템플릿에서 쓸 수 있는 변수는 README의 "메시지 형식 설정" 참고
+  MESSAGE: {
+    // 'default': 아래 TITLE·SHOW 설정으로 카드 형태 / 'custom': CUSTOM_TEMPLATE을 그대로 사용
+    FORMAT: 'default',
+
+    // 제목 줄
+    TITLE: {
+      SHOW: true,
+      TEMPLATE: '{{emoji}} {{subject}}',  // 예: '[{{fromName}}] {{subject}}', ':rotating_light: 긴급 메일'
+      STYLE: 'bold',                      // 'bold': 굵게 / 'plain': 일반 / 'header': 큰 헤더(멘션·서식 불가)
+    },
+
+    MENTION: '',                // 예: '<!channel>', '<!here>', '<@U0123ABCD>' (여러 명은 공백으로 구분)
+    MENTION_POSITION: 'after',  // 'after': 제목 뒤 / 'before': 제목 앞
+    EMOJI: ':envelope:',        // {{emoji}} 변수 값
+    DATE_FORMAT: 'yyyy-MM-dd HH:mm',
+    BODY_PREVIEW_CHARS: 300,    // 본문 미리보기 글자 수 (0이면 본문 미포함)
+
+    // default 형식에서 보여줄 항목 (false면 숨김)
+    SHOW: {
+      fromName: true,   // 보낸 사람 이름
+      fromEmail: true,  // 보낸 사람 주소
+      date: true,       // 받은 시각
+      body: true,       // 본문 미리보기
+      keywords: true,   // 매칭된 키워드
+      gmailLink: true,  // Gmail에서 열기 링크
+    },
+
+    // default 형식의 항목 이름
+    LABELS: {
+      from: '보낸 사람',
+      date: '받은 시각',
+      keywords: '키워드',
+      gmailLink: 'Gmail에서 열기',
+    },
+
+    // custom 형식 템플릿 (Slack mrkdwn)
+    // {{변수}}: 값으로 바뀜 / {{#변수}}...{{/변수}}: 값이 있을 때만 표시 (그 줄이 비면 줄째로 삭제)
+    CUSTOM_TEMPLATE: [
+      '*{{title}}* {{mention}}',
+      '{{from}} · {{date}}',
+      '{{#bodyQuoted}}{{bodyQuoted}}{{/bodyQuoted}}',
+      '{{#keywords}}키워드: {{keywords}}{{/keywords}}',
+      '{{gmailLink}}',
+    ].join('\n'),
+
+    // 푸시 알림과 미리보기에 표시되는 한 줄 문구
+    NOTIFICATION_TEXT: '[메일] {{fromName}}: {{subject}}',
+  },
 
   // ── 편의 기능 ──
   DRY_RUN: false,              // true: Slack으로 보내지 않고 로그만 남김

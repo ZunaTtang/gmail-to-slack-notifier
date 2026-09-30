@@ -1,38 +1,66 @@
-/** 메시지 템플릿 — 모양을 바꾸려면 이 함수만 수정 */
+/** 메일 한 통을 Slack 메시지로 변환 (형식은 CONFIG.MESSAGE에서 설정) */
 function buildSlackMessage_(mail) {
-  const when = Utilities.formatDate(mail.date, Session.getScriptTimeZone(), 'yyyy-MM-dd HH:mm');
-  const mention = CONFIG.MENTION ? CONFIG.MENTION + ' ' : '';
-  const subject = escapeSlack_(truncate_(mail.subject, 200));
+  const M = CONFIG.MESSAGE;
+  const vars = buildTemplateVars_(mail);
+  const blocks = M.FORMAT === 'custom' ? buildCustomBlocks_(vars) : buildDefaultBlocks_(mail, vars);
 
-  const blocks = [
-    { type: 'section', text: { type: 'mrkdwn', text: `${mention}:envelope: *${subject}*` } },
-    {
-      type: 'section',
-      fields: [
-        { type: 'mrkdwn', text: `*보낸 사람*\n${escapeSlack_(mail.fromName)} (${escapeSlack_(mail.fromEmail)})` },
-        { type: 'mrkdwn', text: `*받은 시각*\n${when}` },
-      ],
-    },
-  ];
+  // text는 푸시 알림과 blocks를 표시할 수 없는 환경에서 쓰는 대체 문구
+  const text = truncate_(renderTemplate_(M.NOTIFICATION_TEXT, vars), 300) || '새 메일 알림';
+  return blocks.length ? { text, blocks } : { text };
+}
 
-  if (CONFIG.BODY_PREVIEW_CHARS > 0 && mail.body) {
-    const preview = escapeSlack_(truncate_(compactWhitespace_(mail.body), CONFIG.BODY_PREVIEW_CHARS));
-    const quoted = preview.split('\n').map(line => '>' + line).join('\n');
-    blocks.push({ type: 'section', text: { type: 'mrkdwn', text: truncate_(quoted, 2900) } });
+/** FORMAT: 'custom' — CUSTOM_TEMPLATE을 한 덩어리로 발송 */
+function buildCustomBlocks_(vars) {
+  const text = renderTemplate_(CONFIG.MESSAGE.CUSTOM_TEMPLATE, vars);
+  return text ? [mrkdwnSection_(truncate_(text, 3000))] : [];
+}
+
+/** FORMAT: 'default' — TITLE, SHOW, LABELS 설정으로 카드 구성 */
+function buildDefaultBlocks_(mail, vars) {
+  const M = CONFIG.MESSAGE;
+  const blocks = [];
+
+  // 제목 줄 (+ 멘션)
+  if (M.TITLE.SHOW && M.TITLE.STYLE === 'header') {
+    // 헤더 블록은 plain_text만 지원하므로 멘션은 별도 줄로 분리
+    const raw = renderTemplate_(M.TITLE.TEMPLATE, buildTemplateVars_(mail, false));
+    const mentionBlock = vars.mention ? mrkdwnSection_(vars.mention) : null;
+    if (mentionBlock && M.MENTION_POSITION === 'before') blocks.push(mentionBlock);
+    if (raw) blocks.push({ type: 'header', text: { type: 'plain_text', text: truncate_(raw, 150), emoji: true } });
+    if (mentionBlock && M.MENTION_POSITION !== 'before') blocks.push(mentionBlock);
+  } else {
+    const title = M.TITLE.SHOW && vars.title
+      ? (M.TITLE.STYLE === 'bold' ? `*${vars.title}*` : vars.title)
+      : '';
+    const line = joinMention_(title, vars.mention);
+    if (line) blocks.push(mrkdwnSection_(line));
   }
 
+  // 보낸 사람 / 받은 시각
+  const fields = [];
+  const sender = formatSender_(M.SHOW.fromName ? vars.fromName : '', M.SHOW.fromEmail ? vars.fromEmail : '');
+  if (sender) fields.push({ type: 'mrkdwn', text: `*${M.LABELS.from}*\n${sender}` });
+  if (M.SHOW.date) fields.push({ type: 'mrkdwn', text: `*${M.LABELS.date}*\n${vars.date}` });
+  if (fields.length) blocks.push({ type: 'section', fields });
+
+  // 본문 미리보기
+  if (M.SHOW.body && vars.bodyQuoted) blocks.push(mrkdwnSection_(truncate_(vars.bodyQuoted, 2900)));
+
+  // 키워드 / Gmail 링크
   const context = [];
-  if (mail.matchedKeywords.length) {
-    context.push('키워드: ' + mail.matchedKeywords.map(k => '`' + escapeSlack_(k) + '`').join(' '));
+  if (M.SHOW.keywords && mail.matchedKeywords.length) {
+    context.push(`${M.LABELS.keywords}: ` + mail.matchedKeywords.map(k => '`' + escapeSlack_(k) + '`').join(' '));
   }
-  if (CONFIG.SHOW_GMAIL_LINK) context.push(`<${mail.link}|Gmail에서 열기>`);
+  if (M.SHOW.gmailLink) context.push(vars.gmailLink);
   if (context.length) {
     blocks.push({ type: 'context', elements: context.map(text => ({ type: 'mrkdwn', text })) });
   }
 
-  // text는 푸시 알림과 blocks를 표시할 수 없는 환경에서 쓰는 대체 문구
-  const fallback = `${mention}[메일] ${escapeSlack_(mail.fromName)}: ${escapeSlack_(truncate_(mail.subject, 150))}`;
-  return { text: fallback, blocks };
+  return blocks;
+}
+
+function mrkdwnSection_(text) {
+  return { type: 'section', text: { type: 'mrkdwn', text } };
 }
 
 /** payload: { text, blocks? } */

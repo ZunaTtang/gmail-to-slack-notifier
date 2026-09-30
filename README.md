@@ -13,7 +13,7 @@ Gmail에서 **특정 발신자**나 **키워드**가 포함된 메일을 찾아 
 7. [4단계: 필터 설정 (Config.js)](#4단계-필터-설정-configjs)
 8. [5단계: 권한 승인, 테스트, 트리거 설치](#5단계-권한-승인-테스트-트리거-설치)
 9. [운영과 관리](#운영과-관리)
-10. [메시지 템플릿 바꾸기](#메시지-템플릿-바꾸기)
+10. [메시지 형식 설정](#메시지-형식-설정)
 11. [동작 방식](#동작-방식)
 12. [주의사항](#주의사항)
 13. [문제 해결](#문제-해결)
@@ -34,7 +34,8 @@ Gmail에서 **특정 발신자**나 **키워드**가 포함된 메일을 찾아 
 | `src/Config.js` | **사용자 설정** (이 파일만 수정하면 됨) |
 | `src/Main.js` | 트리거 진입점 `checkEmails()`와 전체 처리 흐름 |
 | `src/Filter.js` | Gmail 검색어 만들기, 발신자·키워드 판정 |
-| `src/Slack.js` | 메시지 템플릿, 발송(봇/웹훅), 재시도, 오류 알림 |
+| `src/Template.js` | 템플릿 변수와 렌더링 (`{{변수}}`, 조건부 블록) |
+| `src/Slack.js` | 메시지 구성(default/custom), 발송(봇/웹훅), 재시도, 오류 알림 |
 | `src/Store.js` | 발송 기록 (중복 발송 방지) |
 | `src/Setup.js` | 환경 변수 읽기, 설정 검증, 트리거 설치·해제, 테스트·상태 함수 |
 | `src/Utils.js` | 공통 상수와 문자열 유틸 |
@@ -199,9 +200,7 @@ EXCLUDE_KEYWORDS: ['광고', '뉴스레터'],
 | `KEYWORD_PREFILTER` | `true` | Gmail 검색으로 1차 필터링 ([주의사항](#주의사항) 참고) |
 | `TRIGGER_INTERVAL_MINUTES` | `5` | 1, 5, 10, 15, 30 중 하나 |
 | `SLACK_SEND_MODE` | `'auto'` | `auto` / `bot` / `webhook` |
-| `MENTION` | `''` | `<!channel>`, `<!here>`, `<@U0123ABCD>`(사용자 ID) |
-| `BODY_PREVIEW_CHARS` | `300` | 본문 미리보기 글자 수 (0이면 본문 미포함) |
-| `SHOW_GMAIL_LINK` | `true` | "Gmail에서 열기" 링크 표시 |
+| `MESSAGE` | | 제목, 멘션, 표시 항목, 커스텀 템플릿 → [메시지 형식 설정](#메시지-형식-설정) |
 | `DRY_RUN` | `false` | Slack으로 보내지 않고 로그만 남김 |
 | `EXCLUDE_SELF` | `true` | 내가 보낸 메일 제외 |
 | `APPLY_LABEL` | `''` | 보낸 메일의 스레드에 붙일 라벨 이름 (없으면 자동 생성) |
@@ -245,6 +244,8 @@ GAS 편집기 상단 툴바에서 **실행할 함수를 드롭다운으로 고�
 | `showStatus` | 트리거, 발송 방식, 환경 변수(가려서 표시), 현재 검색어 확인 |
 | `previewMatches` | 발송 없이 매칭되는 메일 미리보기 |
 | `testSlackConnection` | 샘플 메시지 발송 |
+| `testSlackWithLatestMail` | 조건에 맞는 최근 실제 메일로 발송 (메시지 모양 확인용) |
+| `previewSlackMessage` | 발송 없이 메시지 JSON을 로그로 출력 |
 | `setupTrigger` | 트리거 설치 또는 재설치 |
 | `removeTrigger` | 트리거 해제 (알림 중지) |
 | `resetProcessed` | 발송 기록 초기화. 기간 안의 메일이 다시 발송될 수 있음 |
@@ -267,12 +268,119 @@ clasp push
 
 ---
 
-## 메시지 템플릿 바꾸기
-`src/Slack.js`의 `buildSlackMessage_(mail)`만 수정하면 됩니다. 쓸 수 있는 값은 다음과 같습니다.
+## 메시지 형식 설정
+메시지 모양은 코드를 고치지 않고 `Config.js`의 `MESSAGE`로 바꿉니다. 형식은 두 가지입니다.
 
-`mail.subject`, `mail.fromName`, `mail.fromEmail`, `mail.date`, `mail.body`, `mail.link`, `mail.matchedKeywords`
+| `MESSAGE.FORMAT` | 설명 |
+|---|---|
+| `'default'` | 제목 → 보낸 사람·받은 시각 → 본문 미리보기 → 키워드·Gmail 링크 순서의 카드. 항목별로 켜고 끌 수 있음 |
+| `'custom'` | `CUSTOM_TEMPLATE`에 쓴 문구를 그대로 발송. 순서와 문구를 자유롭게 구성 |
 
-[Block Kit Builder](https://app.slack.com/block-kit-builder)에서 모양을 미리 본 뒤, `testSlackConnection`으로 실제 모양을 확인하세요.
+### 제목 (`MESSAGE.TITLE`)
+
+| 항목 | 기본값 | 설명 |
+|---|---|---|
+| `SHOW` | `true` | 제목 줄 표시 |
+| `TEMPLATE` | `'{{emoji}} {{subject}}'` | 제목 문구. 예: `'[{{fromName}}] {{subject}}'`, `':rotating_light: 긴급 메일 도착'` |
+| `STYLE` | `'bold'` | `bold`: 굵게 / `plain`: 일반 / `header`: 큰 헤더 글씨 (굵게·링크 같은 서식은 쓸 수 없고, 멘션은 헤더 바로 아래 줄로 분리됨) |
+
+custom 형식에서는 이 제목을 `{{title}}` 변수로 씁니다.
+
+### 멘션
+
+| 항목 | 기본값 | 설명 |
+|---|---|---|
+| `MENTION` | `''` | `<!channel>`, `<!here>`, `<@U0123ABCD>`(사용자 ID). 여러 명은 공백으로 구분: `'<@U0123> <@U0456>'` |
+| `MENTION_POSITION` | `'after'` | `after`: 제목 뒤 / `before`: 제목 앞 (default 형식에만 적용. custom 형식은 템플릿에서 `{{mention}}` 위치로 결정) |
+
+사용자 ID는 Slack에서 사람 프로필을 열고 **⋮ → 멤버 ID 복사**로 확인합니다. 이름(`@홍길동`)을 그대로 쓰면 태그되지 않습니다.
+
+### 항목 숨기기 (`MESSAGE.SHOW`, default 형식)
+`false`로 바꾼 항목은 메시지에서 빠집니다.
+
+| 항목 | 설명 |
+|---|---|
+| `fromName` | 보낸 사람 이름 |
+| `fromEmail` | 보낸 사람 주소 |
+| `date` | 받은 시각 |
+| `body` | 본문 미리보기 |
+| `keywords` | 매칭된 키워드 |
+| `gmailLink` | Gmail에서 열기 링크 |
+
+항목 이름은 `MESSAGE.LABELS`에서 바꿉니다(`보낸 사람`, `받은 시각`, `키워드`, `Gmail에서 열기`).
+보낸 사람 이름이 없는 메일은 주소가 이름을 대신하고, 이름과 주소가 같으면 한 번만 표시합니다.
+
+### 그 밖의 항목
+
+| 항목 | 기본값 | 설명 |
+|---|---|---|
+| `EMOJI` | `':envelope:'` | `{{emoji}}` 값 |
+| `DATE_FORMAT` | `'yyyy-MM-dd HH:mm'` | 날짜 형식 ([SimpleDateFormat](https://docs.oracle.com/javase/8/docs/api/java/text/SimpleDateFormat.html) 문법). 예: `'M월 d일 a h:mm'` |
+| `BODY_PREVIEW_CHARS` | `300` | 본문 미리보기 글자 수 (0이면 본문 미포함) |
+| `NOTIFICATION_TEXT` | `'[메일] {{fromName}}: {{subject}}'` | 휴대폰 푸시 알림과 채널 목록 미리보기에 뜨는 한 줄 |
+
+### 템플릿 변수
+`TITLE.TEMPLATE`, `CUSTOM_TEMPLATE`, `NOTIFICATION_TEXT`에서 쓸 수 있습니다.
+
+| 변수 | 값 |
+|---|---|
+| `{{title}}` | `TITLE.TEMPLATE`으로 만든 제목 (`TITLE.TEMPLATE` 안에서는 쓸 수 없음) |
+| `{{subject}}` | 메일 제목 |
+| `{{fromName}}` / `{{fromEmail}}` | 보낸 사람 이름 / 주소 |
+| `{{from}}` | `이름 (주소)`. 이름이 없으면 주소만 |
+| `{{date}}` | 받은 시각 (`DATE_FORMAT` 적용) |
+| `{{body}}` | 본문 미리보기 |
+| `{{bodyQuoted}}` | 본문 미리보기를 인용(`>`) 형태로 |
+| `{{keywords}}` | 매칭된 키워드 (쉼표로 구분) |
+| `{{mention}}` | `MENTION` 값 |
+| `{{emoji}}` | `EMOJI` 값 |
+| `{{link}}` | Gmail 주소(URL) |
+| `{{gmailLink}}` | `Gmail에서 열기` 링크 |
+
+- **조건부 표시**: `{{#변수}}...{{/변수}}`로 감싸면 값이 있을 때만 표시합니다. 감싼 부분이 사라져 빈 줄이 되면 그 줄도 지웁니다.
+- **서식**: 템플릿에서는 Slack 서식(`*굵게*`, `_기울임_`, `~취소선~`, `` `코드` ``, `<URL|링크 글자>`)을 쓸 수 있습니다. 메일에서 온 값(제목·본문 등)은 서식이 적용되지 않게 처리됩니다.
+- **오타 확인**: 없는 변수 이름을 쓰면 `{{이름}}`이 그대로 보이므로 바로 알아챌 수 있습니다.
+
+### 예시
+
+**1. 발신 주소와 본문을 숨기고, 제목을 큰 헤더로**
+```js
+MESSAGE: {
+  FORMAT: 'default',
+  TITLE: { SHOW: true, TEMPLATE: '{{emoji}} {{subject}}', STYLE: 'header' },
+  MENTION: '<!here>',
+  SHOW: { fromName: true, fromEmail: false, date: true, body: false, keywords: false, gmailLink: true },
+  // ...나머지는 기본값 유지
+}
+```
+
+**2. custom 형식으로 짧은 한두 줄 알림**
+```js
+FORMAT: 'custom',
+TITLE: { SHOW: true, TEMPLATE: '[{{fromName}}] {{subject}}', STYLE: 'bold' },
+MENTION: '<@U0123ABCD>',
+CUSTOM_TEMPLATE: [
+  ':rotating_light: *{{title}}* {{mention}}',
+  '{{date}} · <{{link}}|메일 보기>',
+  '{{#keywords}}_키워드: {{keywords}}_{{/keywords}}',
+].join('\n'),
+```
+결과:
+```
+🚨 [KuCoin] 30-Day Daily Trading Performance Report @홍길동
+2026-09-30 10:34 · 메일 보기
+키워드: Ranked Top 80%: NO
+```
+
+### 모양 확인하기
+
+| 함수 | 설명 |
+|---|---|
+| `testSlackConnection` | 샘플 메일로 실제 발송 |
+| `testSlackWithLatestMail` | 조건에 맞는 **가장 최근 실제 메일**로 발송 (발송 기록에 남기지 않으므로 나중에 정식 알림이 한 번 더 올 수 있음) |
+| `previewSlackMessage` | 발송하지 않고 Slack 메시지 JSON을 로그에 출력. [Block Kit Builder](https://app.slack.com/block-kit-builder)에 `blocks`를 붙여 넣으면 미리볼 수 있음 |
+
+더 복잡한 모양이 필요하면 `src/Slack.js`의 `buildDefaultBlocks_`를 직접 수정하세요.
 
 ---
 
@@ -308,5 +416,7 @@ clasp push
 | `Slack API 오류: missing_scope` | 봇에 `chat:write` 권한을 추가하고 앱을 **재설치** |
 | 웹훅 `404` / `invalid_token` / `no_service` | 웹훅 URL을 다시 발급 |
 | `설정 오류: ...` | 메시지에 나온 `Config` 항목을 수정 |
+| 메시지에 `{{...}}`가 그대로 보임 | 변수 이름 오타. [템플릿 변수](#템플릿-변수) 표에서 확인 |
+| 멘션이 태그되지 않음 | `@이름`이 아니라 `<@U0123ABCD>`(멤버 ID) 형식으로 입력 |
 | 알림이 안 옴 | `showStatus`로 트리거 확인 → `previewMatches`로 매칭 확인 → **≡ 실행** 메뉴에서 로그 확인 |
 | 같은 메일이 다시 옴 | `resetProcessed`를 실행했거나, 기간 안의 알림이 200건을 넘은 경우 |

@@ -75,7 +75,8 @@ function collectMessages_(threads) {
 
 function toMail_(message, myEmail) {
   const from = parseAddress_(message.getFrom());
-  const needBody = CONFIG.KEYWORD_FIELDS.includes('body') || CONFIG.BODY_PREVIEW_CHARS > 0;
+  const needBody = CONFIG.KEYWORD_FIELDS.includes('body') ||
+    (CONFIG.MESSAGE.BODY_PREVIEW_CHARS > 0 && messageUsesBody_());
   const authuser = myEmail ? `?authuser=${encodeURIComponent(myEmail)}` : '';
   return {
     id: message.getId(),
@@ -83,7 +84,7 @@ function toMail_(message, myEmail) {
     fromName: from.name,
     fromEmail: from.email,
     date: message.getDate(),
-    body: needBody ? message.getPlainBody() : '',
+    body: needBody ? getBodyText_(message) : '',
     link: `https://mail.google.com/mail/${authuser}#all/${message.getId()}`,
     matchedKeywords: [],
   };

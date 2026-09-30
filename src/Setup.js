@@ -27,6 +27,17 @@ function validateConfig_() {
   if (!['auto', 'bot', 'webhook'].includes(CONFIG.SLACK_SEND_MODE)) {
     errors.push("SLACK_SEND_MODE는 'auto', 'bot', 'webhook' 중 하나입니다.");
   }
+  const M = CONFIG.MESSAGE || {};
+  if (!['default', 'custom'].includes(M.FORMAT)) errors.push("MESSAGE.FORMAT는 'default' 또는 'custom'입니다.");
+  if (!M.TITLE || !['bold', 'plain', 'header'].includes(M.TITLE.STYLE)) {
+    errors.push("MESSAGE.TITLE.STYLE는 'bold', 'plain', 'header' 중 하나입니다.");
+  }
+  if (!['before', 'after'].includes(M.MENTION_POSITION)) {
+    errors.push("MESSAGE.MENTION_POSITION은 'before' 또는 'after'입니다.");
+  }
+  if (M.FORMAT === 'custom' && !String(M.CUSTOM_TEMPLATE || '').trim()) {
+    errors.push('MESSAGE.FORMAT이 custom이면 MESSAGE.CUSTOM_TEMPLATE을 입력해야 합니다.');
+  }
   if (!CONFIG.SENDERS.length && !CONFIG.KEYWORDS.length) {
     errors.push('SENDERS와 KEYWORDS가 모두 비어 있으면 모든 메일이 발송됩니다. 하나 이상 설정하세요.');
   }
@@ -53,7 +64,37 @@ function removeTrigger() {
 
 /** ▶ Slack 연결과 템플릿 확인 (샘플 메시지 발송) */
 function testSlackConnection() {
-  const sample = {
+  validateConfig_();
+  sendSlack_(buildSlackMessage_(sampleMail_()));
+  console.log(`테스트 메시지 발송 완료 (${resolveSlackMode_()} 방식)`);
+}
+
+/** ▶ 조건에 맞는 가장 최근 실제 메일로 메시지 모양 확인 (발송 기록에는 남기지 않음) */
+function testSlackWithLatestMail() {
+  validateConfig_();
+  const myEmail = getMyEmail_();
+  const messages = collectMessages_(GmailApp.search(buildQuery_(), 0, 20)).reverse();
+  for (const message of messages) {
+    const mail = toMail_(message, myEmail);
+    if (CONFIG.EXCLUDE_SELF && myEmail && mail.fromEmail === myEmail) continue;
+    const matched = matchMail_(mail);
+    if (!matched) continue;
+    mail.matchedKeywords = matched;
+    sendSlack_(buildSlackMessage_(mail));
+    console.log(`최근 매칭 메일로 테스트 발송: ${mail.subject}`);
+    return;
+  }
+  console.log('조건에 맞는 최근 메일이 없습니다.');
+}
+
+/** ▶ 발송 없이 샘플 메시지의 Slack JSON을 로그로 확인 (Block Kit Builder에 붙여 넣어 미리보기 가능) */
+function previewSlackMessage() {
+  validateConfig_();
+  console.log(JSON.stringify(buildSlackMessage_(sampleMail_()), null, 2));
+}
+
+function sampleMail_() {
+  return {
     id: 'test',
     subject: '[테스트] 서버 장애 발생 안내',
     fromName: '홍길동',
@@ -63,8 +104,6 @@ function testSlackConnection() {
     link: 'https://mail.google.com/',
     matchedKeywords: ['장애'],
   };
-  sendSlack_(buildSlackMessage_(sample));
-  console.log(`테스트 메시지 발송 완료 (${resolveSlackMode_()} 방식)`);
 }
 
 /** ▶ 발송 없이 현재 설정으로 걸리는 메일 미리보기 */

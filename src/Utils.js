@@ -25,6 +25,37 @@ function compactWhitespace_(s) {
     .trim();
 }
 
+/** 본문 텍스트 추출 — 텍스트 파트가 없거나 HTML이 섞여 있으면 HTML을 텍스트로 변환 */
+function getBodyText_(message) {
+  const plain = message.getPlainBody() || '';
+  if (plain.trim() && !looksLikeHtml_(plain)) return plain;
+  return htmlToText_(plain.trim() ? plain : message.getBody());
+}
+
+function looksLikeHtml_(s) {
+  return /<(html|head|body|meta|div|p|br|table|span|a|img|style)\b[^>]*>/i.test(s);
+}
+
+function htmlToText_(html) {
+  return decodeHtmlEntities_(
+    String(html || '')
+      .replace(/<(head|style|script|title)\b[\s\S]*?<\/\1>/gi, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div|li|tr|h[1-6]|table|blockquote)>/gi, '\n')
+      .replace(/<li\b[^>]*>/gi, '• ')
+      .replace(/<[^>]+>/g, '')
+  );
+}
+
+function decodeHtmlEntities_(s) {
+  const named = { nbsp: ' ', amp: '&', lt: '<', gt: '>', quot: '"', apos: "'", '#39': "'" };
+  return s
+    .replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&(nbsp|amp|lt|gt|quot|apos);/g, (_, k) => named[k]);
+}
+
 /** '"홍길동" <a@b.com>' → { name: '홍길동', email: 'a@b.com' } */
 function parseAddress_(raw) {
   const str = String(raw || '');
