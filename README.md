@@ -14,9 +14,10 @@ Gmail에서 **특정 발신자**나 **키워드**가 포함된 메일을 찾아 
 8. [5단계: 권한 승인, 테스트, 트리거 설치](#5단계-권한-승인-테스트-트리거-설치)
 9. [운영과 관리](#운영과-관리)
 10. [메시지 형식 설정](#메시지-형식-설정)
-11. [동작 방식](#동작-방식)
-12. [주의사항](#주의사항)
-13. [문제 해결](#문제-해결)
+11. [리포트 모드 (실무 예시: KuCoin 일일 리포트)](#리포트-모드-실무-예시-kucoin-일일-리포트)
+12. [동작 방식](#동작-방식)
+13. [주의사항](#주의사항)
+14. [문제 해결](#문제-해결)
 
 ---
 
@@ -34,6 +35,8 @@ Gmail에서 **특정 발신자**나 **키워드**가 포함된 메일을 찾아 
 | `src/Config.js` | **사용자 설정** (이 파일만 수정하면 됨) |
 | `src/Main.js` | 트리거 진입점 `checkEmails()`와 전체 처리 흐름 |
 | `src/Filter.js` | Gmail 검색어 만들기, 발신자·키워드 판정 |
+| `src/Report.js` | 리포트 모드: 고정 형식 메일에서 값과 표를 뽑아 카드로 구성 |
+| `test/run.js` | 로컬 테스트 (`node test/run.js`, GAS API를 흉내 냄) |
 | `src/Template.js` | 템플릿 변수와 렌더링 (`{{변수}}`, 조건부 블록) |
 | `src/Slack.js` | 메시지 구성(default/custom), 발송(봇/웹훅), 재시도, 오류 알림 |
 | `src/Store.js` | 발송 기록 (중복 발송 방지) |
@@ -246,6 +249,7 @@ GAS 편집기 상단 툴바에서 **실행할 함수를 드롭다운으로 고�
 | `testSlackConnection` | 샘플 메시지 발송 |
 | `testSlackWithLatestMail` | 조건에 맞는 최근 실제 메일로 발송 (메시지 모양 확인용) |
 | `previewSlackMessage` | 발송 없이 메시지 JSON을 로그로 출력 |
+| `previewReport` | 리포트 메일 파싱 결과를 로그로 출력 (리포트 모드) |
 | `setupTrigger` | 트리거 설치 또는 재설치 |
 | `removeTrigger` | 트리거 해제 (알림 중지) |
 | `resetProcessed` | 발송 기록 초기화. 기간 안의 메일이 다시 발송될 수 있음 |
@@ -383,6 +387,99 @@ CUSTOM_TEMPLATE: [
 | `previewSlackMessage` | 발송하지 않고 Slack 메시지 JSON을 로그에 출력. [Block Kit Builder](https://app.slack.com/block-kit-builder)에 `blocks`를 붙여 넣으면 미리볼 수 있음 |
 
 더 복잡한 모양이 필요하면 `src/Slack.js`의 `buildDefaultBlocks_`를 직접 수정하세요.
+
+---
+
+## 리포트 모드 (실무 예시: KuCoin 일일 리포트)
+형식이 고정된 리포트 메일에서 **필요한 값만 뽑아** 카드로 보내는 모드입니다. 지금은 KuCoin의 "30-Day Daily Trading Performance Report" 메일에 맞춰져 있습니다.
+
+- `Ranked Top 80%: YES/NO` 값
+- 30일 표에서 **가장 최근 날짜 행**의 값 (9/30에 받은 메일이면 9/29 행)
+
+제목에 `REPORT.MATCH_SUBJECT`가 들어간 메일에만 적용됩니다. 그 밖의 메일은 위의 `MESSAGE` 형식으로 보냅니다.
+
+### 결과 예시
+NO일 때:
+```
+🚨 LOT Ranked Top 80%가 NO입니다.
+수동 거래를 진행해 주세요! @담당자
+Ranked Top 80%: NO · 기준일 2026-09-29 · LOT-USDT · 평가 기간 2026-08-31 ~ 2026-09-29
+Organic Volume        Liquidity (2%)
+7,946.49 USDT         1,165.91 USD
+Avg. Spread           Taker Volume
+0.14%                 8,238.25 USD
+Trading Frequency     Floor Price
+18.47%                0.006077
+Gmail에서 열기
+```
+YES일 때는 `✅ LOT Ranked Top 80%: YES` 제목으로 보내고, 기본값으로는 멘션하지 않습니다.
+
+### 켜는 방법 (`Config.js`)
+```js
+SENDERS: ['postlisting@kucoin.com'],
+KEYWORDS: ['30-Day Daily Trading Performance'],
+KEYWORD_FIELDS: ['subject'],
+// ...
+MESSAGE: { MENTION: '<@U0123ABCD>', /* ... */ },
+REPORT: { ENABLED: true, /* ... */ },
+```
+- YES인 날도 받으려면 `KEYWORDS`에 `'Ranked Top 80%: NO'`를 넣지 마세요. 넣으면 NO인 날만 옵니다.
+- 멘션 대상은 `MESSAGE.MENTION`을 그대로 씁니다.
+
+### 설정 항목 (`REPORT`)
+
+| 항목 | 기본값 | 설명 |
+|---|---|---|
+| `ENABLED` | `false` | 리포트 모드 켜기 |
+| `MATCH_SUBJECT` | `'30-Day Daily Trading Performance Report'` | 이 문구가 제목에 있으면 리포트로 처리 |
+| `TITLE_NO` / `TITLE_YES` | 경고 문구 / 확인 문구 | 결과별 제목. `\n`으로 줄바꿈 |
+| `TITLE_STYLE` | `'bold'` | `bold` / `plain` |
+| `MENTION_ON` | `'NO'` | `NO`: NO일 때만 / `ALWAYS`: 항상 / `NEVER`: 안 함 |
+| `SHOW_SUMMARY` | `true` | Ranked · 기준일 · 페어 · 평가 기간 요약 줄 |
+| `SHOW_GMAIL_LINK` | `true` | Gmail에서 열기 링크 |
+| `NUMBER_FORMAT` | `true` | 천 단위 쉼표. 소수 자릿수는 원문 그대로 |
+| `NOTIFICATION_TEXT` | `'{{token}} Ranked Top 80%: {{ranked}} ({{date}})'` | 푸시 알림 한 줄 |
+| `LABELS` | `ranked`, `date`, `period` | 요약 줄의 항목 이름 |
+| `COLUMNS` | 표의 6개 값 열 | 표시할 열 목록 (아래 참고) |
+
+**리포트 전용 템플릿 변수** (`TITLE_NO`, `TITLE_YES`, `NOTIFICATION_TEXT`에서 사용)
+
+| 변수 | 값 |
+|---|---|
+| `{{token}}` | 토큰 (`LOT`) |
+| `{{ranked}}` | `YES` 또는 `NO` |
+| `{{date}}` | 기준일 = 표의 최신 날짜 |
+| `{{pair}}` | 거래 페어 (`LOT-USDT`) |
+| `{{periodFrom}}` / `{{periodTo}}` | 평가 기간 |
+| `{{receivedDate}}` | 메일 받은 시각 |
+
+이 밖에 `{{mention}}`, `{{emoji}}`, `{{subject}}` 같은 [기존 변수](#템플릿-변수)도 모두 쓸 수 있습니다.
+
+### 표시할 열 바꾸기 (`REPORT.COLUMNS`)
+```js
+{ match: 'Daily Taker Volume', label: 'Taker Volume', unit: ' USD', show: true },
+```
+- `match`: 표 머리글에 **포함된 문구**입니다. 대소문자는 구분하지 않고, 머리글 뒤쪽이 조금 바뀌어도 찾을 수 있습니다.
+- `label`: Slack에 표시할 이름입니다. 한글도 됩니다(예: `'테이커 거래량'`).
+- `unit`: 값 뒤에 붙일 단위입니다.
+- `show: false`로 바꾸면 숨깁니다. 배열 순서가 곧 카드에 표시되는 순서입니다.
+- Date와 Trading Pair 열은 요약 줄에 표시되므로 여기에는 넣지 않습니다.
+
+### 형식을 읽지 못했을 때
+KuCoin이 메일 형식을 바꿔서 `Ranked Top 80%` 값이나 표를 찾지 못하면, 알림을 건너뛰지 않습니다. 대신 **⚠️ 리포트 형식을 읽지 못했습니다** 경고와 함께 원인, 기본 카드, Gmail 링크를 보냅니다. 이 경고가 오면 `previewReport`로 원인을 확인하고, `COLUMNS`의 `match` 문구를 새 머리글에 맞게 고치세요.
+
+### 확인하기
+
+| 함수 | 설명 |
+|---|---|
+| `previewReport` | 최근 리포트 메일을 파싱한 결과(Ranked, 기준일, 열별 값)와 Slack JSON을 로그로 출력. 발송하지 않음 |
+| `testSlackWithLatestMail` | 최근 리포트 메일을 실제 카드로 발송 |
+
+### 로컬 테스트
+가짜 값으로 만든 테스트 데이터로 파서와 메시지 구성을 확인할 수 있습니다. Node.js만 있으면 됩니다.
+```bash
+node test/run.js
+```
 
 ---
 

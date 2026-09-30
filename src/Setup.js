@@ -38,6 +38,16 @@ function validateConfig_() {
   if (M.FORMAT === 'custom' && !String(M.CUSTOM_TEMPLATE || '').trim()) {
     errors.push('MESSAGE.FORMAT이 custom이면 MESSAGE.CUSTOM_TEMPLATE을 입력해야 합니다.');
   }
+  if (reportEnabled_()) {
+    const R = CONFIG.REPORT;
+    if (!String(R.MATCH_SUBJECT || '').trim()) errors.push('REPORT.MATCH_SUBJECT를 입력해야 합니다.');
+    if (!['NO', 'ALWAYS', 'NEVER'].includes(R.MENTION_ON)) {
+      errors.push("REPORT.MENTION_ON은 'NO', 'ALWAYS', 'NEVER' 중 하나입니다.");
+    }
+    if (!Array.isArray(R.COLUMNS) || R.COLUMNS.some(c => !c || !String(c.match || '').trim())) {
+      errors.push('REPORT.COLUMNS의 각 항목에는 match(머리글 문구)가 있어야 합니다.');
+    }
+  }
   if (!CONFIG.SENDERS.length && !CONFIG.KEYWORDS.length) {
     errors.push('SENDERS와 KEYWORDS가 모두 비어 있으면 모든 메일이 발송됩니다. 하나 이상 설정하세요.');
   }
@@ -85,6 +95,33 @@ function testSlackWithLatestMail() {
     return;
   }
   console.log('조건에 맞는 최근 메일이 없습니다.');
+}
+
+/** ▶ 조건에 맞는 최근 리포트 메일을 파싱한 결과와 Slack JSON을 로그로 확인 (발송하지 않음) */
+function previewReport() {
+  validateConfig_();
+  if (!reportEnabled_()) {
+    console.log('REPORT.ENABLED가 false입니다. Config에서 켜 주세요.');
+    return;
+  }
+  const myEmail = getMyEmail_();
+  const messages = collectMessages_(GmailApp.search(buildQuery_(), 0, 20)).reverse();
+  const message = messages.find(m => isReportMail_(toMail_(m, myEmail)));
+  if (!message) {
+    console.log(`제목에 "${CONFIG.REPORT.MATCH_SUBJECT}"가 들어간 최근 메일이 없습니다. (검색어: ${buildQuery_()})`);
+    return;
+  }
+  const mail = toMail_(message, myEmail);
+  const report = parseReport_(mail.body);
+  console.log([
+    `메일: ${mail.subject} (${mail.date})`,
+    `파싱 결과: ${report.ok ? '성공' : '실패 - ' + report.errors.join(' / ')}`,
+    `Token: ${report.token} / Ranked Top 80%: ${report.ranked} / 평가 기간: ${report.periodFrom} ~ ${report.periodTo}`,
+    `기준일(최신 행): ${report.latest ? report.latest.date : '-'} / 표 행 수: ${report.rows.length}`,
+    ...report.columns.map(c => `  ${c.label}: ${c.value}`),
+  ].join('\n'));
+  mail.matchedKeywords = matchMail_(mail) || [];
+  console.log(JSON.stringify(buildSlackMessage_(mail), null, 2));
 }
 
 /** ▶ 발송 없이 샘플 메시지의 Slack JSON을 로그로 확인 (Block Kit Builder에 붙여 넣어 미리보기 가능) */

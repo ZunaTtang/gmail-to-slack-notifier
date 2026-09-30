@@ -79,6 +79,36 @@ const CONFIG = {
     NOTIFICATION_TEXT: '[메일] {{fromName}}: {{subject}}',
   },
 
+  // ── 리포트 모드 ──
+  // 형식이 고정된 리포트 메일에서 "Ranked Top 80%" 값과 표의 최신 날짜 행을 뽑아 카드로 보냄
+  // 제목에 MATCH_SUBJECT가 들어 있는 메일에만 적용되고, 나머지 메일은 위 MESSAGE 형식으로 보냄
+  REPORT: {
+    ENABLED: false,
+    MATCH_SUBJECT: '30-Day Daily Trading Performance Report',
+
+    // 제목 — 변수: {{token}} {{ranked}} {{date}}(기준일) {{pair}} {{periodFrom}} {{periodTo}} {{receivedDate}} 등
+    TITLE_NO: ':rotating_light: {{token}} Ranked Top 80%가 NO입니다.\n수동 거래를 진행해 주세요!',
+    TITLE_YES: ':white_check_mark: {{token}} Ranked Top 80%: YES',
+    TITLE_STYLE: 'bold',        // 'bold' | 'plain'
+    MENTION_ON: 'NO',           // 'NO': NO일 때만 / 'ALWAYS': 항상 / 'NEVER': 안 함 (대상은 MESSAGE.MENTION)
+
+    SHOW_SUMMARY: true,         // Ranked · 기준일 · 페어 · 평가 기간 요약 줄
+    SHOW_GMAIL_LINK: true,
+    NUMBER_FORMAT: true,        // 천 단위 쉼표 (7946.49 → 7,946.49)
+    NOTIFICATION_TEXT: '{{token}} Ranked Top 80%: {{ranked}} ({{date}})',
+    LABELS: { ranked: 'Ranked Top 80%', date: '기준일', period: '평가 기간' },
+
+    // 표에서 보여줄 열 — match: 머리글에 포함된 문구 / label: Slack 표시 이름 / unit: 값 뒤에 붙일 단위
+    COLUMNS: [
+      { match: 'Daily Single-Sided Organic Volume', label: 'Organic Volume', unit: ' USDT', show: true },
+      { match: 'Avg. Daily Single-Sided Liquidity', label: 'Liquidity (2%)', unit: ' USD', show: true },
+      { match: 'Avg. Daily Spread', label: 'Avg. Spread', unit: '%', show: true },
+      { match: 'Daily Taker Volume', label: 'Taker Volume', unit: ' USD', show: true },
+      { match: 'Daily Trading Frequency', label: 'Trading Frequency', unit: '%', show: true },
+      { match: 'Daily Floor Price', label: 'Floor Price', unit: '', show: true },
+    ],
+  },
+
   // ── 편의 기능 ──
   DRY_RUN: false,              // true: Slack으로 보내지 않고 로그만 남김
   EXCLUDE_SELF: true,          // 내가 보낸 메일(스레드 안 답장 등) 제외

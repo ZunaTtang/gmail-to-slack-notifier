@@ -1,5 +1,7 @@
 /** 메일 한 통을 Slack 메시지로 변환 (형식은 CONFIG.MESSAGE에서 설정) */
 function buildSlackMessage_(mail) {
+  if (isReportMail_(mail)) return buildReportMessage_(mail, parseReport_(mail.body));
+
   const M = CONFIG.MESSAGE;
   const vars = buildTemplateVars_(mail);
   const blocks = M.FORMAT === 'custom' ? buildCustomBlocks_(vars) : buildDefaultBlocks_(mail, vars);

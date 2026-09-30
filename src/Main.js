@@ -75,7 +75,7 @@ function collectMessages_(threads) {
 
 function toMail_(message, myEmail) {
   const from = parseAddress_(message.getFrom());
-  const needBody = CONFIG.KEYWORD_FIELDS.includes('body') ||
+  const needBody = CONFIG.KEYWORD_FIELDS.includes('body') || reportEnabled_() ||
     (CONFIG.MESSAGE.BODY_PREVIEW_CHARS > 0 && messageUsesBody_());
   const authuser = myEmail ? `?authuser=${encodeURIComponent(myEmail)}` : '';
   return {
