@@ -157,6 +157,16 @@ test('YES: 다른 제목, 멘션 없음', () => {
   assert.ok(!allText(msg).includes('U000TEST'));
 });
 
+test('포워딩 YES 메일: 제목이 달라도 본문으로 리포트 인식, YES 제목', () => {
+  const { buildSlackMessage_, getBodyText_ } = loadGas();
+  const html = `<div>---------- Forwarded message ----------<br>From: KuCoin</div>${reportHtml({ ranked: 'YES' })}`;
+  const body = getBodyText_({ getPlainBody: () => '', getBody: () => html });
+  const msg = buildSlackMessage_(mailWith(body, 'FW: teset'));
+  assert.strictEqual(msg.blocks[0].text.text, '*:white_check_mark: ABC Ranked Top 80%: YES*');
+  assert.ok(!allText(msg).includes('U000TEST'));
+  assert.match(msg.text, /Ranked Top 80%: YES/);
+});
+
 test('열 숨기기: show:false인 열은 빠진다', () => {
   const gas = loadGas();
   gas.CONFIG.REPORT.COLUMNS[5].show = false;
@@ -173,9 +183,9 @@ test('표가 없으면 파싱 실패 경고를 보낸다', () => {
   assert.ok(allText(msg).includes('Gmail'));
 });
 
-test('제목이 다른 메일은 기존 범용 형식으로 보낸다', () => {
+test('제목도 본문도 리포트가 아니면 기존 범용 형식으로 보낸다', () => {
   const { buildSlackMessage_ } = loadGas();
-  const msg = buildSlackMessage_(mailWith(reportText(), 'Weekly newsletter'));
+  const msg = buildSlackMessage_(mailWith('Hello, this is a newsletter.', 'Weekly newsletter'));
   assert.ok(!allText(msg).includes('기준일'));
 });
 

@@ -84,7 +84,8 @@ const CONFIG = {
   // 제목에 MATCH_SUBJECT가 들어 있는 메일에만 적용되고, 나머지 메일은 위 MESSAGE 형식으로 보냄
   REPORT: {
     ENABLED: false,
-    MATCH_SUBJECT: '30-Day Daily Trading Performance Report',
+    MATCH_SUBJECT: '30-Day Daily Trading Performance Report', // 제목에 이 문구가 있거나
+    MATCH_BODY: 'Ranked Top 80%',                              // 본문에 이 문구가 있으면 리포트로 처리 (빈 값이면 제목만 확인)
 
     // 제목 — 변수: {{token}} {{ranked}} {{date}}(기준일) {{pair}} {{periodFrom}} {{periodTo}} {{receivedDate}} 등
     TITLE_NO: ':rotating_light: {{token}} Ranked Top 80%가 NO입니다.\n수동 거래를 진행해 주세요!',

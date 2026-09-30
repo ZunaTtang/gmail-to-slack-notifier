@@ -40,7 +40,9 @@ function validateConfig_() {
   }
   if (reportEnabled_()) {
     const R = CONFIG.REPORT;
-    if (!String(R.MATCH_SUBJECT || '').trim()) errors.push('REPORT.MATCH_SUBJECT를 입력해야 합니다.');
+    if (!String(R.MATCH_SUBJECT || '').trim() && !String(R.MATCH_BODY || '').trim()) {
+      errors.push('REPORT.MATCH_SUBJECT와 MATCH_BODY 중 하나는 입력해야 합니다.');
+    }
     if (!['NO', 'ALWAYS', 'NEVER'].includes(R.MENTION_ON)) {
       errors.push("REPORT.MENTION_ON은 'NO', 'ALWAYS', 'NEVER' 중 하나입니다.");
     }
@@ -111,7 +113,7 @@ function previewReport() {
   const messages = collectMessages_(GmailApp.search(buildQuery_(), 0, 20)).reverse();
   const message = messages.find(m => isReportMail_(toMail_(m, myEmail)));
   if (!message) {
-    console.log(`제목에 "${CONFIG.REPORT.MATCH_SUBJECT}"가 들어간 최근 메일이 없습니다. (검색어: ${buildQuery_()})`);
+    console.log(`리포트로 인식되는 최근 메일이 없습니다. (검색어: ${buildQuery_()})`);
     return;
   }
   const mail = toMail_(message, myEmail);

@@ -396,7 +396,7 @@ CUSTOM_TEMPLATE: [
 - `Ranked Top 80%: YES/NO` 값
 - 30일 표에서 **가장 최근 날짜 행**의 값 (9/30에 받은 메일이면 9/29 행)
 
-제목에 `REPORT.MATCH_SUBJECT`가 들어간 메일에만 적용됩니다. 그 밖의 메일은 위의 `MESSAGE` 형식으로 보냅니다.
+제목에 `REPORT.MATCH_SUBJECT`가 있거나 본문에 `REPORT.MATCH_BODY`가 있는 메일에 적용됩니다. 포워딩한 테스트 메일도 본문으로 인식됩니다. 그 밖의 메일은 위의 `MESSAGE` 형식으로 보냅니다.
 
 ### 결과 예시
 NO일 때:
@@ -435,6 +435,7 @@ REPORT: { ENABLED: true, /* ... */ },
 |---|---|---|
 | `ENABLED` | `false` | 리포트 모드 켜기 |
 | `MATCH_SUBJECT` | `'30-Day Daily Trading Performance Report'` | 이 문구가 제목에 있으면 리포트로 처리 |
+| `MATCH_BODY` | `'Ranked Top 80%'` | 이 문구가 본문에 있어도 리포트로 처리. 포워딩한 메일이나 제목이 바뀐 메일에도 적용됨 (빈 값이면 제목만 확인) |
 | `TITLE_NO` / `TITLE_YES` | 경고 문구 / 확인 문구 | 결과별 제목. `\n`으로 줄바꿈 |
 | `TITLE_STYLE` | `'bold'` | `bold` / `plain` |
 | `MENTION_ON` | `'NO'` | `NO`: NO일 때만 / `ALWAYS`: 항상 / `NEVER`: 안 함 |

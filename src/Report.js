@@ -8,9 +8,13 @@ function reportEnabled_() {
   return Boolean(CONFIG.REPORT && CONFIG.REPORT.ENABLED);
 }
 
+/** 제목에 MATCH_SUBJECT가 있거나, 본문에 MATCH_BODY가 있으면 리포트로 처리 (포워딩·제목 변경 대비) */
 function isReportMail_(mail) {
+  if (!reportEnabled_()) return false;
   const R = CONFIG.REPORT;
-  return reportEnabled_() && Boolean(R.MATCH_SUBJECT) && mail.subject.includes(R.MATCH_SUBJECT);
+  const bySubject = Boolean(R.MATCH_SUBJECT) && mail.subject.includes(R.MATCH_SUBJECT);
+  const byBody = Boolean(R.MATCH_BODY) && String(mail.body || '').includes(R.MATCH_BODY);
+  return bySubject || byBody;
 }
 
 /**
