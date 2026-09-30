@@ -81,15 +81,21 @@ const CONFIG = {
 
   // ── 리포트 모드 ──
   // 형식이 고정된 리포트 메일에서 "Ranked Top 80%" 값과 표의 최신 날짜 행을 뽑아 카드로 보냄
-  // 제목에 MATCH_SUBJECT가 들어 있는 메일에만 적용되고, 나머지 메일은 위 MESSAGE 형식으로 보냄
+  // 아래 MATCH_SUBJECT/MATCH_BODY로 인식한 메일에만 적용되고, 나머지 메일은 위 MESSAGE 형식으로 보냄
   REPORT: {
     ENABLED: false,
     MATCH_SUBJECT: '30-Day Daily Trading Performance Report', // 제목에 이 문구가 있거나
     MATCH_BODY: 'Ranked Top 80%',                              // 본문에 이 문구가 있으면 리포트로 처리 (빈 값이면 제목만 확인)
 
-    // 제목 — 변수: {{token}} {{ranked}} {{date}}(기준일) {{pair}} {{periodFrom}} {{periodTo}} {{receivedDate}} 등
-    TITLE_NO: ':rotating_light: {{token}} Ranked Top 80%가 NO입니다.\n수동 거래를 진행해 주세요!',
-    TITLE_YES: ':white_check_mark: {{token}} Ranked Top 80%: YES',
+    // 제목 — 변수: {{token}} {{ranked}} {{date}}(기준일) {{today}}(오늘) {{pair}} {{periodFrom}} {{periodTo}} {{receivedDate}} 등
+    TITLE_NO: ':rotating_light: Kucoin 거래소의 {{token}} Ranked Top 80%가 NO입니다.',
+    TITLE_YES: ':white_check_mark: Kucoin 거래소의 {{token}} Ranked Top 80%가 YES입니다. ({{today}})',
+
+    // YES 알림
+    NOTIFY_ON_YES: true,        // false: YES인 날은 알림을 보내지 않음
+    YES_DETAIL: false,          // false: 제목 한 줄만 / true: NO처럼 표 값까지 표시
+    DEFAULT_TOKEN: 'LOT',       // 본문에서 Token을 못 찾을 때 {{token}} 값
+    TODAY_FORMAT: 'yyyy-MM-dd', // {{today}}(알림 보내는 날) 날짜 형식
     TITLE_STYLE: 'bold',        // 'bold' | 'plain'
     MENTION_ON: 'NO',           // 'NO': NO일 때만 / 'ALWAYS': 항상 / 'NEVER': 안 함 (대상은 MESSAGE.MENTION)
 

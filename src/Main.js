@@ -51,9 +51,14 @@ function runCheck_({ dryRun }) {
       stats.matches.push(mail);
       if (dryRun) continue;
 
-      sendSlack_(buildSlackMessage_(mail));
+      const payload = buildSlackMessage_(mail);
+      if (payload) {
+        sendSlack_(payload);
+        stats.sent++;
+      } else {
+        console.log(`알림 끔 설정으로 건너뜀: ${mail.subject}`); // 예: REPORT.NOTIFY_ON_YES = false
+      }
       store.add(mail.id);
-      stats.sent++;
 
       if (label) message.getThread().addLabel(label);
       if (CONFIG.MARK_AS_READ) message.markRead();

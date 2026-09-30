@@ -13,7 +13,9 @@ const SRC = path.join(__dirname, '..', 'src');
 function loadGas() {
   const ctx = {
     console: { log() {}, warn() {}, error: console.error },
-    Utilities: { formatDate: d => d.toISOString().slice(0, 16).replace('T', ' ') },
+    Utilities: {
+      formatDate: (d, tz, fmt) => (fmt === 'yyyy-MM-dd' ? d.toISOString().slice(0, 10) : d.toISOString().slice(0, 16).replace('T', ' ')),
+    },
     Session: { getScriptTimeZone: () => 'Asia/Seoul' },
   };
   vm.createContext(ctx);
@@ -25,7 +27,10 @@ function loadGas() {
   gas.CONFIG.REPORT.ENABLED = true;
   gas.CONFIG.REPORT.MENTION_ON = 'NO';
   gas.CONFIG.REPORT.TITLE_NO = ':rotating_light: {{token}} Ranked Top 80%가 NO입니다.\n수동 거래를 진행해 주세요!';
-  gas.CONFIG.REPORT.TITLE_YES = ':white_check_mark: {{token}} Ranked Top 80%: YES';
+  gas.CONFIG.REPORT.TITLE_YES = ':white_check_mark: Kucoin 거래소의 {{token}} Ranked Top 80%가 YES입니다. ({{today}})';
+  gas.CONFIG.REPORT.NOTIFY_ON_YES = true;
+  gas.CONFIG.REPORT.YES_DETAIL = false;
+  gas.CONFIG.REPORT.DEFAULT_TOKEN = 'LOT';
   gas.CONFIG.MESSAGE.MENTION = '<@U000TEST>';
   gas.CONFIG.MESSAGE.MENTION_POSITION = 'after';
   return gas;
@@ -150,11 +155,36 @@ test('LAYOUT fields: 2열 카드', () => {
   assert.strictEqual(msg.blocks[2].fields.length, 6);
 });
 
-test('YES: 다른 제목, 멘션 없음', () => {
+const TODAY = new Date().toISOString().slice(0, 10);
+
+test('YES: 한 줄 알림(오늘 날짜), 멘션·표 없음', () => {
   const { buildSlackMessage_ } = loadGas();
   const msg = buildSlackMessage_(mailWith(reportText({ ranked: 'YES' })));
-  assert.strictEqual(msg.blocks[0].text.text, '*:white_check_mark: ABC Ranked Top 80%: YES*');
+  assert.strictEqual(msg.blocks[0].text.text, `*:white_check_mark: Kucoin 거래소의 ABC Ranked Top 80%가 YES입니다. (${TODAY})*`);
+  assert.strictEqual(msg.blocks.length, 2); // 제목 + Gmail 링크
   assert.ok(!allText(msg).includes('U000TEST'));
+  assert.ok(!allText(msg).includes('Daily Floor Price'));
+});
+
+test('YES: 표가 없는 메일이어도 경고 없이 한 줄 알림, 토큰은 DEFAULT_TOKEN', () => {
+  const { buildSlackMessage_ } = loadGas();
+  const msg = buildSlackMessage_(mailWith('FW: test\nRanked Top 80%: YES', 'FW: teset'));
+  assert.strictEqual(msg.blocks[0].text.text, `*:white_check_mark: Kucoin 거래소의 LOT Ranked Top 80%가 YES입니다. (${TODAY})*`);
+  assert.ok(!allText(msg).includes('읽지 못했습니다'));
+});
+
+test('YES + NOTIFY_ON_YES=false: 발송하지 않음(null)', () => {
+  const gas = loadGas();
+  gas.CONFIG.REPORT.NOTIFY_ON_YES = false;
+  assert.strictEqual(gas.buildSlackMessage_(mailWith(reportText({ ranked: 'YES' }))), null);
+  assert.ok(gas.buildSlackMessage_(mailWith(reportText({ ranked: 'NO' })))); // NO는 그대로 발송
+});
+
+test('YES + YES_DETAIL=true: 표 값까지 표시', () => {
+  const gas = loadGas();
+  gas.CONFIG.REPORT.YES_DETAIL = true;
+  const msg = gas.buildSlackMessage_(mailWith(reportText({ ranked: 'YES' })));
+  assert.ok(allText(msg).includes('Daily Floor Price'));
 });
 
 test('포워딩 YES 메일: 제목이 달라도 본문으로 리포트 인식, YES 제목', () => {
@@ -162,7 +192,7 @@ test('포워딩 YES 메일: 제목이 달라도 본문으로 리포트 인식, Y
   const html = `<div>---------- Forwarded message ----------<br>From: KuCoin</div>${reportHtml({ ranked: 'YES' })}`;
   const body = getBodyText_({ getPlainBody: () => '', getBody: () => html });
   const msg = buildSlackMessage_(mailWith(body, 'FW: teset'));
-  assert.strictEqual(msg.blocks[0].text.text, '*:white_check_mark: ABC Ranked Top 80%: YES*');
+  assert.strictEqual(msg.blocks[0].text.text, `*:white_check_mark: Kucoin 거래소의 ABC Ranked Top 80%가 YES입니다. (${TODAY})*`);
   assert.ok(!allText(msg).includes('U000TEST'));
   assert.match(msg.text, /Ranked Top 80%: YES/);
 });

@@ -415,7 +415,12 @@ Gmail에서 열기
 ```
 값은 굵게 표시됩니다. 2열 카드가 필요하면 `LAYOUT: 'fields'`로 바꾸세요.
 기본값은 항목 이름을 **메일 머리글 그대로** 쓰고, 값에는 천 단위 쉼표와 단위를 붙입니다. 바꾸려면 [표시할 열 바꾸기](#표시할-열-바꾸기-reportcolumns)를 참고하세요.
-YES일 때는 `✅ LOT Ranked Top 80%: YES` 제목으로 보내고, 기본값으로는 멘션하지 않습니다.
+YES일 때는 기본으로 **한 줄 알림**만 보냅니다. 멘션은 붙지 않고, 표가 없는 메일이어도 경고 없이 나갑니다.
+```
+✅ Kucoin 거래소의 LOT Ranked Top 80%가 YES입니다. (2026-09-30)
+Gmail에서 열기
+```
+YES일 때 알림을 끄려면 `NOTIFY_ON_YES: false`, 표 값까지 보려면 `YES_DETAIL: true`로 바꾸세요.
 
 ### 켜는 방법 (`Config.js`)
 ```js
@@ -438,6 +443,10 @@ REPORT: { ENABLED: true, /* ... */ },
 | `MATCH_BODY` | `'Ranked Top 80%'` | 이 문구가 본문에 있어도 리포트로 처리. 포워딩한 메일이나 제목이 바뀐 메일에도 적용됨 (빈 값이면 제목만 확인) |
 | `TITLE_NO` / `TITLE_YES` | 경고 문구 / 확인 문구 | 결과별 제목. `\n`으로 줄바꿈 |
 | `TITLE_STYLE` | `'bold'` | `bold` / `plain` |
+| `NOTIFY_ON_YES` | `true` | `false`면 YES인 날은 알림을 보내지 않음 (발송 기록에는 남겨서 다시 검사하지 않음) |
+| `YES_DETAIL` | `false` | `false`: YES는 제목 한 줄만 / `true`: NO처럼 표 값까지 표시 |
+| `DEFAULT_TOKEN` | `'LOT'` | 본문에서 `Token:`을 못 찾을 때 쓸 `{{token}}` 값 |
+| `TODAY_FORMAT` | `'yyyy-MM-dd'` | `{{today}}` 날짜 형식 |
 | `MENTION_ON` | `'NO'` | `NO`: NO일 때만 / `ALWAYS`: 항상 / `NEVER`: 안 함 |
 | `LAYOUT` | `'list'` | `list`: 한 줄에 "항목: 값" (이름이 길어도 잘 읽힘) / `fields`: 2열 카드 (짧은 `label`을 쓸 때 적합) |
 | `SHOW_SUMMARY` | `true` | Ranked · 기준일 · 페어 · 평가 기간 요약 줄 |
@@ -454,6 +463,7 @@ REPORT: { ENABLED: true, /* ... */ },
 | `{{token}}` | 토큰 (`LOT`) |
 | `{{ranked}}` | `YES` 또는 `NO` |
 | `{{date}}` | 기준일 = 표의 최신 날짜 |
+| `{{today}}` | 알림을 보내는 오늘 날짜 (`TODAY_FORMAT` 적용) |
 | `{{pair}}` | 거래 페어 (`LOT-USDT`) |
 | `{{periodFrom}}` / `{{periodTo}}` | 평가 기간 |
 | `{{receivedDate}}` | 메일 받은 시각 |

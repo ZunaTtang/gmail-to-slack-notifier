@@ -95,7 +95,12 @@ function testSlackWithLatestMail() {
     const matched = matchMail_(mail);
     if (!matched) continue;
     mail.matchedKeywords = matched;
-    sendSlack_(buildSlackMessage_(mail));
+    const payload = buildSlackMessage_(mail);
+    if (!payload) {
+      console.log(`최근 매칭 메일이 알림 끔 설정(예: REPORT.NOTIFY_ON_YES = false)이라 발송하지 않았습니다: ${mail.subject}`);
+      return;
+    }
+    sendSlack_(payload);
     console.log(`최근 매칭 메일로 테스트 발송: ${mail.subject}`);
     return;
   }
@@ -126,7 +131,8 @@ function previewReport() {
     ...report.columns.map(c => `  ${c.label}: ${c.value}`),
   ].join('\n'));
   mail.matchedKeywords = matchMail_(mail) || [];
-  console.log(JSON.stringify(buildSlackMessage_(mail), null, 2));
+  const payload = buildSlackMessage_(mail);
+  console.log(payload ? JSON.stringify(payload, null, 2) : '발송하지 않음 (REPORT.NOTIFY_ON_YES = false)');
 }
 
 /** ▶ 발송 없이 샘플 메시지의 Slack JSON을 로그로 확인 (Block Kit Builder에 붙여 넣어 미리보기 가능) */

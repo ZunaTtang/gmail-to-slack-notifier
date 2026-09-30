@@ -99,12 +99,14 @@ function formatReportNumber_(raw) {
   return frac === undefined ? grouped : `${grouped}.${frac}`;
 }
 
-/** 리포트용 템플릿 변수 — 기존 변수 + token, ranked, date(기준일), pair, periodFrom, periodTo, receivedDate */
+/** 리포트용 템플릿 변수 — 기존 변수 + token, ranked, date(기준일), today, pair, periodFrom, periodTo, receivedDate */
 function buildReportVars_(mail, report) {
+  const R = CONFIG.REPORT;
   const vars = buildTemplateVars_(mail);
   vars.receivedDate = vars.date;
   Object.assign(vars, {
-    token: escapeSlack_(report.token),
+    token: escapeSlack_(report.token || R.DEFAULT_TOKEN || ''),
+    today: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), R.TODAY_FORMAT || 'yyyy-MM-dd'),
     ranked: report.ranked,
     date: report.latest ? report.latest.date : '',
     pair: escapeSlack_(report.latest ? report.latest.pair : ''),
@@ -114,10 +116,16 @@ function buildReportVars_(mail, report) {
   return vars;
 }
 
+/** 리포트 메시지. NOTIFY_ON_YES가 꺼져 있고 결과가 YES이면 null(발송하지 않음) */
 function buildReportMessage_(mail, report) {
+  const R = CONFIG.REPORT;
+  if (report.ranked === 'YES') {
+    if (R.NOTIFY_ON_YES === false) return null;
+    // YES는 기본으로 한 줄 알림만 보내므로 표가 없어도 됨
+    if (!R.YES_DETAIL) return buildYesSimpleMessage_(mail, report);
+  }
   if (!report.ok) return buildReportFailureMessage_(mail, report);
 
-  const R = CONFIG.REPORT;
   const vars = buildReportVars_(mail, report);
   const blocks = [];
 
@@ -160,6 +168,21 @@ function buildReportMessage_(mail, report) {
   if (R.SHOW_GMAIL_LINK) blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: vars.gmailLink }] });
 
   const text = truncate_(renderTemplate_(R.NOTIFICATION_TEXT, vars), 300) || `리포트: ${report.ranked}`;
+  return { text, blocks };
+}
+
+/** YES 한 줄 알림: 제목(TITLE_YES) + Gmail 링크 */
+function buildYesSimpleMessage_(mail, report) {
+  const R = CONFIG.REPORT;
+  const vars = buildReportVars_(mail, report);
+  const rawTitle = renderTemplate_(R.TITLE_YES, vars);
+  const title = R.TITLE_STYLE === 'plain' ? rawTitle : boldLines_(rawTitle);
+  const line = joinMention_(title, R.MENTION_ON === 'ALWAYS' ? vars.mention : '');
+
+  const blocks = [mrkdwnSection_(line || 'Ranked Top 80%: YES')];
+  if (R.SHOW_GMAIL_LINK) blocks.push({ type: 'context', elements: [{ type: 'mrkdwn', text: vars.gmailLink }] });
+
+  const text = truncate_(renderTemplate_(R.NOTIFICATION_TEXT, vars), 300) || 'Ranked Top 80%: YES';
   return { text, blocks };
 }
 
